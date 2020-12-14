@@ -1,112 +1,69 @@
-declare const index: unique symbol;
+import {
+  $,
+  _,
+  Functor,
+  Monad
+} from './base';
 
-/**
- * Placeholder representing an indexed type variable.
- */
-export interface _<N extends number = 0> {
-  [index]: N;
-}
-export type _0 = _<0>;
-export type _1 = _<1>;
-export type _2 = _<2>;
-export type _3 = _<3>;
-export type _4 = _<4>;
-export type _5 = _<5>;
-export type _6 = _<6>;
-export type _7 = _<7>;
-export type _8 = _<8>;
-export type _9 = _<9>;
+type Expr<A>
+    = { tag: 'plus' ; l: A ; r: A }
+    | { tag: 'times' ; l: A ; r: A }
+    | { tag: 'paren' ; c: A }
+    | { tag: 'num' ; n: number }
+    ;
 
-declare const fixed: unique symbol;
+const plus = <A>(l: A, r: A): Expr<A> => ({ tag: 'plus', l, r });
+const times = <A>(l: A, r: A): Expr<A> => ({ tag: 'times', l, r });
+const paren = <A>(c: A): Expr<A> => ({ tag: 'paren', c });
+const num = <A>(n: number): Expr<A> => ({ tag: 'num', n });
 
-/**
- * Marks a type to be ignored by the application operator `$`. This is used to protect
- * bound type parameters.
- */
-export interface Fixed<T> {
-  [fixed]: T;
-}
+const ExprFunctor: Functor<Expr<_>> = {
+  map: (f, expr) => {
+    switch(expr.tag) {
+      case 'plus': return plus(f(expr.l), f(expr.r));
+      case 'times': return times(f(expr.l), f(expr.r));
+      case 'paren': return paren(f(expr.c));
+      default: return expr; } }};
 
-/**
- * Type application (simultaneously substitutes all placeholders within the target type)
- */
-// prettier-ignore
-export type $<T, S extends any[]> = (
-  T extends Fixed<infer U> ? { [indirect]: U } :
-  T extends _<infer N> ? { [indirect]: S[N] } :
-  T extends undefined | null | boolean | string | number ? { [indirect]: T } :
-  T extends (infer A)[] & { length: infer L } ? {
-    [indirect]: L extends keyof TupleTable
-      ? TupleTable<T, S>[L]
-      : $<A, S>[]
-  } :
-  T extends (...x: infer I) => infer O ? { [indirect]: (...x: $<I, S>) => $<O, S> } :
-  T extends object ? { [indirect]: { [K in keyof T]: $<T[K], S> } } :
-  { [indirect]: T }
-)[typeof indirect];
-
-/**
- * Used as a level of indirection to avoid circularity errors.
- */
-declare const indirect: unique symbol;
-
-/**
- * Allows looking up the type for a tuple based on its `length`, instead of trying
- * each possibility one by one in a single long conditional.
- */
-// prettier-ignore
-type TupleTable<T extends any[] = any, S extends any[] = any> = {
-  0: [];
-  1: T extends [
-      infer A0
-    ] ? [
-      $<A0, S>
-    ] : never
-  2: T extends [
-      infer A0, infer A1
-    ] ? [
-      $<A0, S>, $<A1, S>
-    ] : never
-  3: T extends [
-      infer A0, infer A1, infer A2
-    ] ? [
-      $<A0, S>, $<A1, S>, $<A2, S>
-    ] : never
-  4: T extends [
-      infer A0, infer A1, infer A2, infer A3
-    ] ? [
-      $<A0, S>, $<A1, S>, $<A2, S>, $<A3, S>
-    ] : never
-  5: T extends [
-      infer A0, infer A1, infer A2, infer A3, infer A4
-    ] ? [
-      $<A0, S>, $<A1, S>, $<A2, S>, $<A3, S>, $<A4, S>
-    ] : never
-  6: T extends [
-      infer A0, infer A1, infer A2, infer A3, infer A4, infer A5
-    ] ? [
-      $<A0, S>, $<A1, S>, $<A2, S>, $<A3, S>, $<A4, S>, $<A5, S>
-    ] : never
-  7: T extends [
-      infer A0, infer A1, infer A2, infer A3, infer A4, infer A5, infer A6
-    ] ? [
-      $<A0, S>, $<A1, S>, $<A2, S>, $<A3, S>, $<A4, S>, $<A5, S>, $<A6, S>
-    ] : never
-  8: T extends [
-      infer A0, infer A1, infer A2, infer A3, infer A4, infer A5, infer A6, infer A7
-    ] ? [
-      $<A0, S>, $<A1, S>, $<A2, S>, $<A3, S>, $<A4, S>, $<A5, S>, $<A6, S>, $<A7, S>
-    ] : never
-  9: T extends [
-      infer A0, infer A1, infer A2, infer A3, infer A4, infer A5, infer A6, infer A7, infer A8
-    ] ? [
-      $<A0, S>, $<A1, S>, $<A2, S>, $<A3, S>, $<A4, S>, $<A5, S>, $<A6, S>, $<A7, S>, $<A8, S>
-    ] : never
-  10: T extends [
-      infer A0, infer A1, infer A2, infer A3, infer A4, infer A5, infer A6, infer A7, infer A8, infer A9
-    ] ? [
-      $<A0, S>, $<A1, S>, $<A2, S>, $<A3, S>, $<A4, S>, $<A5, S>, $<A6, S>, $<A7, S>, $<A8, S>, $<A9, S>
-    ] : never
+function cata<F,A>(
+    functor: Functor<_>,
+    transformer: any,
+    term: any
+): A {
+    const children_mapped = functor.map(
+        (v: A) => cata(functor, transformer,v), term);
+    const transformed = transformer(children_mapped);
+    return transformed;
 }
 
-export * from './static-land';
+function _eval_expr(ex: Expr<number>): number {
+    switch (ex.tag) {
+        case 'plus': return ex.l + ex.r;
+        case 'times': return ex.l * ex.r;
+        case 'paren': return ex.c;
+        default: return ex.n;
+    }
+}
+
+const eval_expr = (ex: any): number => cata(ExprFunctor,_eval_expr,ex);
+const expr1 =
+  times(
+    num(2),
+    plus(
+      num(1),
+      num(3)));
+
+const expr2 =
+    times(
+        num(2),
+        times(
+            paren(
+                plus(
+                    num(1),
+                    num(1))),
+            times(
+                num(4),
+                num(3))));
+
+console.log(eval_expr(expr1));
+console.log(eval_expr(expr2));

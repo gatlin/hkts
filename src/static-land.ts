@@ -1,4 +1,4 @@
-import { $, _ } from '.';
+import { $, _ } from './base';
 
 export interface Setoid<T> {
   equals: (x: T, y: T) => boolean;

@@ -1,4 +1,4 @@
-import { Bifunctor, Monad, _, _0, _1 } from '.';
+import { Bifunctor, Monad, _, _0, _1 } from './base';
 
 it('array', () => {
   const { map, join } = Monad<_[]>({

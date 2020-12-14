@@ -5,6 +5,17 @@ import {
   Monad
 } from './base';
 
+function cata<F,A>(
+    functor: Functor<_>,
+    transformer: any,
+    term: any
+): A {
+    const children_mapped = functor.map(
+        (v: A) => cata(functor, transformer,v), term);
+    const transformed = transformer(children_mapped);
+    return transformed;
+}
+
 type Expr<A>
     = { tag: 'plus' ; l: A ; r: A }
     | { tag: 'times' ; l: A ; r: A }
@@ -24,17 +35,6 @@ const ExprFunctor: Functor<Expr<_>> = {
       case 'times': return times(f(expr.l), f(expr.r));
       case 'paren': return paren(f(expr.c));
       default: return expr; } }};
-
-function cata<F,A>(
-  functor: Functor<_>,
-  transformer: any,
-  term: any
-): A {
-  const children_mapped = functor.map(
-    (v: A) => cata(functor, transformer,v), term);
-  const transformed = transformer(children_mapped);
-  return transformed;
-}
 
 function _eval_expr(ex: Expr<number>): number {
   switch (ex.tag) {

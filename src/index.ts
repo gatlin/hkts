@@ -26,26 +26,26 @@ const ExprFunctor: Functor<Expr<_>> = {
       default: return expr; } }};
 
 function cata<F,A>(
-    functor: Functor<_>,
-    transformer: any,
-    term: any
+  functor: Functor<_>,
+  transformer: any,
+  term: any
 ): A {
-    const children_mapped = functor.map(
-        (v: A) => cata(functor, transformer,v), term);
-    const transformed = transformer(children_mapped);
-    return transformed;
+  const children_mapped = functor.map(
+    (v: A) => cata(functor, transformer,v), term);
+  const transformed = transformer(children_mapped);
+  return transformed;
 }
 
 function _eval_expr(ex: Expr<number>): number {
-    switch (ex.tag) {
-        case 'plus': return ex.l + ex.r;
-        case 'times': return ex.l * ex.r;
-        case 'paren': return ex.c;
-        default: return ex.n;
-    }
+  switch (ex.tag) {
+    case 'plus': return ex.l + ex.r;
+    case 'times': return ex.l * ex.r;
+    case 'paren': return ex.c;
+    default: return ex.n;
+  }
 }
 
-const eval_expr = (ex: any): number => cata(ExprFunctor,_eval_expr,ex);
+const eval_expr = (ex: Expr<any>): number => cata(ExprFunctor,_eval_expr,ex);
 const expr1 =
   times(
     num(2),
@@ -54,16 +54,16 @@ const expr1 =
       num(3)));
 
 const expr2 =
+  times(
+    num(2),
     times(
-        num(2),
-        times(
-            paren(
-                plus(
-                    num(1),
-                    num(1))),
-            times(
-                num(4),
-                num(3))));
+      paren(
+        plus(
+          num(1),
+          num(1))),
+      times(
+        num(4),
+        num(3))));
 
 console.log(eval_expr(expr1));
 console.log(eval_expr(expr2));
